@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day vs Night</title>
+</head>
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+
+    }
+
+
+
+    #board {
+        height: 500px;
+        width: 500px;
+        border: 1px solid black;
+        position: relative;
+        display: flex;
+
+    }
+
+    .left {
+        height: 500px;
+        width: 250px;
+        background-color: green;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .row {
+        width: 250px;
+        height: 25px;
+        display: flex;
+    }
+
+    .rowB {
+        width: 250px;
+        height: 25px;
+        display: flex;
+        flex-direction: row-reverse;
+    }
+
+    .right {
+        height: 500px;
+        width: 250px;
+        background-color: red;
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .black {
+        height: 25px;
+        width: 25px;
+        background-color: black;
+    }
+
+    .white {
+        height: 25px;
+        width: 25px;
+        background-color: white;
+    }
+
+    #black {
+        height: 25px;
+        width: 25px;
+        background-color: black;
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        border: 1px solid white;
+        border-radius: 50%;
+    }
+
+    #white {
+        height: 26px;
+        width: 25px;
+        background-color: white;
+        position: absolute;
+        right: 10px;
+        top: 460px;
+        border: 1px solid black;
+        border-radius: 50%;
+    }
+
+    .position {
+        display: flex;
+        gap: 30px;
+    }
+
+    .score {
+        display: flex;
+        gap: 30px;
+        padding-left: 30px;
+    }
+
+    button {
+        margin-left: 30px;
+    }
+</style>
+
+<body>
+
+    <div id="board">
+        <div id="left" class="left"></div>
+        <div id="right" class="right"></div>
+        <div id="black"></div>
+        <div id="white"></div>
+    </div>
+
+    <div class="position">
+
+        <button id="start" Start>Start</button>
+        <label for="blackY">Day
+            <input id="blackY" type="number" min="10" max="460" value="10">
+        </label>
+        <label for="whiteY">Night
+            <input id="whiteY" type="number" min="10" max="460" value="460">
+        </label>
+
+    </div>
+
+    <div class="score">
+        <div id="whiteScore"></div>
+        <div id="blackScore"></div>
+    </div>
+
+    <script>
+        const board = document.getElementById("board");
+        const start = document.getElementById("start");
+        const blackY = document.getElementById("blackY");
+        const whiteY = document.getElementById("whiteY");
+        const blackScore = document.getElementById("blackScore");
+        const whiteScore = document.getElementById("whiteScore");
+        const left = document.getElementById("left");
+        const right = document.getElementById("right");
+        const whiteBall = document.getElementById("white");
+        const blackBall = document.getElementById("black");
+
+        let gameStarted = false; // Variable to track if the game has started
+
+        whiteY.addEventListener("input", () => {
+            if (!gameStarted && whiteY.value > 460) {
+                whiteY.value = 460;
+            }
+            whiteBall.style.top = parseFloat(whiteY.value) + "px";
+        });
+
+        blackY.addEventListener("input", () => {
+            if (!gameStarted && blackY.value > 460) {
+                blackY.value = 460;
+            }
+            blackBall.style.top = parseFloat(blackY.value) + "px";
+        });
+
+        function create() {
+            for (let i = 0; i < 20; i++) {
+                const row = document.createElement("div")
+                row.classList.add("row");
+                left.appendChild(row);
+
+                const rowB = document.createElement("div")
+                rowB.classList.add("rowB");
+                right.appendChild(rowB);
+                for (let j = 0; j < 10; j++) {
+                    const white = document.createElement("div");
+                    white.classList.add("white");
+                    row.appendChild(white);
+
+                    const black = document.createElement("div");
+                    black.classList.add("black");
+                    rowB.appendChild(black);
+                }
+            }
+        }
+        create();
+
+        function isOverElement(element, x, y) {
+            const rect = element.getBoundingClientRect();
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+
+        function checkCollision(ball, directionTop) {
+            const collisionPoints = [
+                { x: ball.offsetLeft, y: ball.offsetTop },
+                { x: ball.offsetLeft + ball.offsetWidth / 2, y: ball.offsetTop },
+                { x: ball.offsetLeft + ball.offsetWidth, y: ball.offsetTop },
+                { x: ball.offsetLeft, y: ball.offsetTop + ball.offsetHeight / 2 },
+                { x: ball.offsetLeft + ball.offsetWidth / 2, y: ball.offsetTop + ball.offsetHeight / 2 },
+                { x: ball.offsetLeft + ball.offsetWidth, y: ball.offsetTop + ball.offsetHeight / 2 },
+                { x: ball.offsetLeft, y: ball.offsetTop + ball.offsetHeight },
+                { x: ball.offsetLeft + ball.offsetWidth / 2, y: ball.offsetTop + ball.offsetHeight },
+                { x: ball.offsetLeft + ball.offsetWidth, y: ball.offsetTop + ball.offsetHeight }
+            ];
+
+            for (const point of collisionPoints) {
+                const elementsAtPoint = document.elementsFromPoint(point.x, point.y);
+
+                for (const element of elementsAtPoint) {
+                    if ((ball === blackBall && element.classList.contains("black")) ||
+                        (ball === whiteBall && element.classList.contains("white"))) {
+                        const elementRect = element.getBoundingClientRect();
+
+                        directionTop *= -1;
+                        element.classList = ball === blackBall ? "white" : "black";
+                        return directionTop;
+                    }
+                }
+            }
+
+            let bScore = document.querySelectorAll(".black");
+            let wScore = document.querySelectorAll(".white");
+
+            whiteScore.innerHTML = "day:" + wScore.length;
+            blackScore.innerHTML = "night:" + bScore.length;
+
+            return directionTop;
+        }
+
+        function move() {
+            let topValueWhite = parseFloat(whiteY.value) || 460;
+            let leftValueWhite = 460;
+            let directionWhite = 1;
+            let directionTopWhite = -1;
+
+            let topValueBlack = parseFloat(blackY.value) || 10;
+            let leftValueBlack = 10;
+            let directionBlack = 1;
+            let directionTopBlack = 1;
+
+            gameStarted = true;
+
+            setInterval(() => {
+                topValueWhite += 5 * directionWhite;
+                leftValueWhite += 5 * directionTopWhite;
+
+                if (topValueWhite >= 500 - 25 || topValueWhite <= 0) {
+                    directionWhite *= -1;
+                }
+
+                if (leftValueWhite >= 500 - 25 || leftValueWhite <= 0) {
+                    directionTopWhite *= -1;
+                }
+
+                topValueBlack += 5 * directionBlack;
+                leftValueBlack += 5 * directionTopBlack;
+
+                if (topValueBlack >= 500 - 25 || topValueBlack <= 0) {
+                    directionBlack *= -1;
+                }
+
+                if (leftValueBlack >= 500 - 25 || leftValueBlack <= 0) {
+                    directionTopBlack *= -1;
+                }
+
+                whiteBall.style.top = topValueWhite + "px";
+                whiteBall.style.left = leftValueWhite + "px";
+                blackBall.style.top = topValueBlack + "px";
+                blackBall.style.left = leftValueBlack + "px";
+
+                directionTopWhite = checkCollision(whiteBall, directionTopWhite);
+                directionTopBlack = checkCollision(blackBall, directionTopBlack);
+
+                directionWhite = checkCollision(whiteBall, directionWhite);
+                directionBlack = checkCollision(blackBall, directionBlack);
+            }, 5);
+        }
+
+        start.addEventListener("click", () => {
+            move();
+            start.disabled = true;
+            blackY.disabled = true;
+            whiteY.disabled = true;
+        });
+    </script>
+
+
+</body>
+
+</html>
